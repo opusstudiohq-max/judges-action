@@ -118,7 +118,10 @@ class TestEraseRepository < Jp::Test
   def test_checks_quota_once_per_repository
     WebMock.disable_net_connect!
     stub_request(:get, 'https://api.github.com/rate_limit').to_return(
-      { body: '{"rate":{"remaining":222}}', headers: { 'X-RateLimit-Remaining' => '222' } }
+      {
+        body: '{"rate":{"remaining":222}}',
+        headers: { 'X-RateLimit-Remaining' => '222', 'Cache-Control' => 'no-store' }
+      }
     )
     stub_github('https://api.github.com/repositories/1234', body: { id: 1234, name: 'foo', full_name: 'foo/foo' })
     fb = Factbase.new
