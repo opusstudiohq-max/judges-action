@@ -114,4 +114,22 @@ class TestEraseRepository < Jp::Test
     load_it('erase-repository', fb)
     assert_requested(:get, 'https://api.github.com/repositories/403999', times: 1)
   end
+
+  def test_probe_how_often_rate_limit_is_fetched
+    WebMock.disable_net_connect!
+    stub_request(:get, 'https://api.github.com/rate_limit').to_return(
+      { body: '{"rate":{"remaining":222}}', headers: { 'X-RateLimit-Remaining' => '222' } }
+    )
+    stub_github('https://api.github.com/repositories/1234', body: { id: 1234, name: 'foo', full_name: 'foo/foo' })
+    fb = Factbase.new
+    (1..6).each do |n|
+      fb.insert.then do |f|
+        f._id = n
+        f.where = 'github'
+        f.repository = 1234
+      end
+    end
+    load_it('erase-repository', fb)
+    assert_requested(:get, 'https://api.github.com/rate_limit', times: 99)
+  end
 end
